@@ -1,6 +1,6 @@
 # README
 
-This docker image to runs the
+This docker image runs the
 [`loadtest` command](https://www.npmjs.com/package/loadtest)
 as a single containerized load injector.
 
@@ -51,13 +51,15 @@ configure through environment variables as follows:
 
 -   To run via docker:
 
-    `docker run -t -i -e URL=https://yoururl.com pivotaleducation/loadtest`
+    `docker run -t -i -e URL=http://yoururl.com pivotaleducation/loadtest`
 
     Note the `-e` option for environment variables.
     If you need to override the other parameters,
     merely add another `-e` option and the associated values for each.
 
 -   To run via K8s *declaratively* as a K8s Job,
+    Download the
+    [`loadtest-job.yaml` configuration](https://raw.githubusercontent.com/platform-acceleration-lab/docker-loadtest/master/loadtest-job.yaml),
     make the appropriate configuration changes to the name and
     `env` configuration,
     then run the following:

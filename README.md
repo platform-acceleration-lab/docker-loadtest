@@ -51,7 +51,7 @@ configure through environment variables as follows:
 
 -   To run via docker:
 
-    `docker run -t -i -e URL=https://yoururl.com pivotaleducation/loadtest`
+    `docker run -t -i -e URL=http://yoururl.com pivotaleducation/loadtest`
 
     Note the `-e` option for environment variables.
     If you need to override the other parameters,
@@ -59,7 +59,7 @@ configure through environment variables as follows:
 
 -   To run via K8s *declaratively* as a K8s Job,
     make the appropriate configuration changes to the name and
-    `env` configuration,
+    `env` configuration of the accompanying `loadtest-job.yaml`,
     then run the following:
 
     `kubectl apply -f ./loadtest-job.yaml`
