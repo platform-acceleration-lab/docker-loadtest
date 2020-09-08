@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: loadtester
+  namespace: default
+spec:
+  template:
+    spec:
+      containers:
+      - name: loader
+        image: pivotaleducation/loadtest:latest
+        resources:
+          limits:
+            cpu: "1"
+            memory: "64Mi"
+        env:
+        - name: URL
+          value: http://yourip.com
+      restartPolicy: Never

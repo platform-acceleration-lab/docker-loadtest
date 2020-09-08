@@ -1,0 +1,10 @@
+FROM node:14.9.0
+
+RUN npm install -g loadtest@5.0.4
+
+ENV DURATION=300
+ENV NUM_USERS=10
+ENV REQUESTS_PER_SECOND=10
+ENV URL=localhost
+
+CMD loadtest -t $DURATION -c $NUM_USERS --rps $REQUESTS_PER_SECOND --insecure $URL

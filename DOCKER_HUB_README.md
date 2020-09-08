@@ -1,6 +1,6 @@
 # README
 
-This project builds a docker image to run the
+This docker image to runs the
 [`loadtest` command](https://www.npmjs.com/package/loadtest)
 as a single containerized load injector.
 
