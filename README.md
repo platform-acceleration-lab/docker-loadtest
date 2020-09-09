@@ -47,6 +47,34 @@ configure through environment variables as follows:
     all the concurrent users.
     This provides input parameter for the `loadtest --rps` option.
 
+### Routing load test injector to target endpoint
+
+There are network scenarios to consider:
+
+- Whether or not the load test injector is not on the same network as the target endpoint.
+- Whether or not the load injector can resolve DNS of the target endpoint.
+
+If you are running your injector from Docker,
+you should have egress access to endpoints external,
+but routable.  If the endpoint DNS name is configured through `/etc/hosts`
+or `dnsmasq`, you will need to manually add the appropriate host record(s)
+to the `docker run` command, via the `--addhost` option.
+If the endpoint is resolved through DNS server configured on your
+host machines,
+docker should resolve it automatically.
+
+If you are running your load injector on K8s and your workloads
+under test are co-located in the same K8s cluster,
+you can configure your load injector target urls with the service
+dns addresses 
+(either in shortform if colocated in the same namespace,
+or long form if across namespaces).
+
+If you are running your load injector on K8s,
+and your workloads are external,
+verify with your K8s cluster operators that you have egress
+access and DNS resolution for the endpoint you wish to test.
+
 ### Running it
 
 -   To run via docker:
@@ -56,6 +84,13 @@ configure through environment variables as follows:
     Note the `-e` option for environment variables.
     If you need to override the other parameters,
     merely add another `-e` option and the associated values for each.
+    
+    If you are running with locally resolved addresses using `/etc/hosts`
+    or `dnsmasq`,
+    you will need to add host records to your docker run command as
+    follows:
+    
+    `docker run --add-host <host>:<ip> -t -i -e URL=http://yoururl.com pivotaleducation/loadtest`
 
 -   To run via K8s *declaratively* as a K8s Job,
     make the appropriate configuration changes to the name and
@@ -64,7 +99,7 @@ configure through environment variables as follows:
 
     `kubectl apply -f ./loadtest-job.yaml`
 
-    Note the `env` object in the `load-test-pod.yaml` file to
+    Note the `env` object in the `loadtest-job.yaml` file to
     list environment variables.
     If you need to add the other parameters,
     merely add another map entry for each.
@@ -103,7 +138,7 @@ configure through environment variables as follows:
 1.  To terminate while running from K8s declaratively
     (before the 5 minute duration completes):
 
-    `kubectl delete -f ./load-test-pod.yaml`
+    `kubectl delete -f ./loadtest-job.yaml`
 
 1.  To terminate while running from K8s imperatively
     (before the 5 minute duration completes):
