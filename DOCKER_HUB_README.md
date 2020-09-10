@@ -149,7 +149,7 @@ access and DNS resolution for the endpoint you wish to test.
 
 ## Limitations and Caveats
 
-This project is not intended for small scale,
+This project is intended for small scale,
 educational use.
 
 It is not designed for large scale production use.
