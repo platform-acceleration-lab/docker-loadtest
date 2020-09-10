@@ -66,7 +66,7 @@ docker should resolve it automatically.
 If you are running your load injector on K8s and your workloads
 under test are co-located in the same K8s cluster,
 you can configure your load injector target urls with the service
-dns addresses 
+dns addresses
 (either in shortform if colocated in the same namespace,
 or long form if across namespaces).
 
@@ -84,12 +84,12 @@ access and DNS resolution for the endpoint you wish to test.
     Note the `-e` option for environment variables.
     If you need to override the other parameters,
     merely add another `-e` option and the associated values for each.
-    
+
     If you are running with locally resolved addresses using `/etc/hosts`
     or `dnsmasq`,
     you will need to add host records to your docker run command as
     follows:
-    
+
     `docker run --add-host <host>:<ip> -t -i -e URL=http://yoururl.com pivotaleducation/loadtest`
 
 -   To run via K8s *declaratively* as a K8s Job,
