@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function usage() { echo "Usage: $0 [-d <duration in seconds>] [-u <number of concurrent users>] [-w <work rate - requests/second] [-n <kubernetes namespace from where to run the load injector]" 1>&2; exit 1; }
+function usage() { echo "Usage: $0 [-d <duration in seconds>] [-u <number of concurrent users>] [-w <work rate - requests/second] [-n <kubernetes namespace from where to run the load injector] [<target url> ]" 1>&2; exit 1; }
 
 function loadTestExists?() {
     exists=`kubectl get pod -n $namespace|grep loadtest|cut -f 1 -d " "`
