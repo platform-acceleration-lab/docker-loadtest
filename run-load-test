@@ -24,7 +24,7 @@ duration=300
 users=10
 workRate=10
 namespace=development
-url=http://yourip.com
+url=http://localhost:8080
 
 
 while getopts ":d:u:w:n:h:i:" o; do
