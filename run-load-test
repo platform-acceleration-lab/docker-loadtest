@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function usage() { echo "Usage: $0 [-d <duration in seconds>] [-u <number of concurrent users>] [-w <work rate - requests/second] [-n <kubernetes namespace from where to run the load injector] [<target url> ]" 1>&2; exit 1; }
+function usage() { echo "Usage: $0 [-d <duration in seconds>] [-u <number of concurrent users>] [-w <work rate - requests/second] [-n <kubernetes namespace from where to run the load injector] [-h <host name for /etc/hosts> ] [-i <ip address for /etc/hosts> ] [<target url> ]" 1>&2; exit 1; }
 
 function loadTestExists?() {
     exists=`kubectl get pod -n $namespace|grep loadtest|cut -f 1 -d " "`
@@ -27,7 +27,7 @@ namespace=development
 url=http://yourip.com
 
 
-while getopts ":d:c:r:n:" o; do
+while getopts ":d:u:w:n:h:i:" o; do
     case "${o}" in
         d)
             duration=${OPTARG}
@@ -40,6 +40,12 @@ while getopts ":d:c:r:n:" o; do
             ;;
         n)
             namespace=${OPTARG}
+            ;;
+        h)
+            host=${OPTARG}
+            ;;
+        i)
+            ip=${OPTARG}
             ;;
         *)
             usage
@@ -65,7 +71,44 @@ echo "  number of users: $users"
 echo "  work rate (requests per second: $workRate"
 echo "  url: $url"
 
-kubectl run loadtest --image=pivotaleducation/loadtest --restart=Never --namespace=$namespace --env="DURATION=$duration" --env="NUM_USERS=$users" --env="REQUESTS_PER_SECOND=$workRate" --env="URL=$url"
+if [ ! -z $host ] && [ ! -z $ip ] ; then
+echo "  /etc/hosts -> $ip   $host"
+fi
+
+cat > ./.loadtest-pod.yaml <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: loadtest
+  name: loadtest
+  namespace: development
+spec:
+  containers:
+  - env:
+    - name: DURATION
+      value: "$duration"
+    - name: NUM_USERS
+      value: "$users"
+    - name: REQUESTS_PER_SECOND
+      value: "$workRate"
+    - name: URL
+      value: $url
+    image: pivotaleducation/loadtest
+    imagePullPolicy: Always
+    name: loadtest
+  restartPolicy: Never
+EOF
+
+if [ ! -z $host ] && [ ! -z $ip ] ; then
+echo "  hostAliases:" >> ./.loadtest-pod.yaml
+echo "  - ip: $ip" >> ./.loadtest-pod.yaml
+echo "    hostnames:" >> ./.loadtest-pod.yaml
+echo "    - \"$host\"" >> ./.loadtest-pod.yaml
+fi
+
+kubectl apply -f ./.loadtest-pod.yaml
+rm ./.loadtest-pod.yaml
 
 echo "waiting for pod/loadtest to start."
 
