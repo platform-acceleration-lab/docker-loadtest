@@ -204,30 +204,20 @@ run-load-test [-d <duration in seconds>] [-u <number of concurrent users>] [-w <
 Where:
 
 -   `-d` option specifies the duration of the test specified *in seconds*.
-    The default value is 300 seconds, or 5 minutes.
 -   `-u` option specifies the number of simulated concurrent users
     issuing requests against your application.
-    The default value is 10.
 -   `-w` option specifies the number of requests-per-second issued to the
     specified `url` *across all concurrent users*.
-    The default is 10 requests/second.
 -   `-n` option specifies the target namespace with the load injector will run.
-    The default namespace configured is `development`.
--   `h` option is the host name part of the /etc/hosts record to add for the test.
-    This is applicable for when the target of your load test is not resolvable via
-    DNS.
--   `i` option is the ip address part of the /etc/hosts record to add for the test.
-    This is applicable for when the target of your load test is not resolvable via
-    DNS.
 -   `target url` is the fully qualified http url (including protocol specifier,
     host/port and path)
     against which the load injector will issue requests.
-    The default value is `http://localhost:8080`,
-    useful for testing the load injector access to an external endpoint.
 
-The defaults should suffice for most of the labs,
-and for the labs that need specific tuning,
-will call out specific values.
+Note that from Kubernetes,
+you can only test from externally routable addresses.
+
+You can modify the script if necessary to add `/etc/host` entries via
+the `HostAlias` configuration.
 
 ### Monitoring the test
 

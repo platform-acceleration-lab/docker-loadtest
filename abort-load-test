@@ -1,9 +1,6 @@
 #!/bin/bash
 
-
 usage() { echo "Usage: $0 [-n <kubernetes namespace from where to run the load injector]" 1>&2; exit 1; }
-
-namespace=development
 
 while getopts ":n:" o; do
     case "${o}" in
@@ -15,6 +12,11 @@ while getopts ":n:" o; do
             ;;
     esac
 done
+
+if [ -z "$namespace" ] ; then
+    usage
+    exit 1
+fi
 
 if [ ! -z `kubectl get pod|grep loadtest|cut -f 1 -d " "` ]; then
     echo "aborting existing load test, or cleaning up previous load test..."
