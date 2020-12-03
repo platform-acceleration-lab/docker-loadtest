@@ -45,6 +45,14 @@ if [ ! -z "$1" ] ; then
     url=$1
 fi
 
+URL_EXPR='http[s]{0,1}://[a-zA-Z0-9\.]*'
+if [[ ! $url =~ $URL_EXPR ]] ; then
+    echo "URL is missing or not formatted correctly."
+    echo "You need http or https protocol specifier and valid host name."
+    echo "  Example: https://yahoo.com"
+    exit 1
+fi
+
 if [ -z "$duration" ] || [ -z "$users" ] || [ -z "$workRate" ] || [ -z "$namespace" ] || [ -z "$url" ]; then
     usage
     exit 1
