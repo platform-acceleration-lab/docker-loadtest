@@ -20,6 +20,70 @@ function isRunning?() {
     fi
 }
 
+function strip_quotes() {
+    sed -e 's/^"//' -e 's/"$//' <<< $1
+}
+
+function get_node_name() {
+    strip_quotes $(curl -s http://127.0.0.1:9090/api/v1/nodes |jq '.items[0].metadata.name')
+}
+
+function get_node_ip_address() {
+    node=$(get_node_name)
+    strip_quotes $(curl -s http://127.0.0.1:9090/api/v1/nodes/$node |jq '.status.addresses[] |select(.type=="InternalIP")'|jq '.address')
+}
+
+function generate_loadtester_resource_file() {
+    echo "Connecting to kubernetes to get node ip address"
+    kubectl proxy --port 9090 &
+    pid=$!
+
+    sleep 2
+
+    url=$1
+    duration=$2
+    users=$3
+    workRate=$4
+    namespace=$5
+    nodeIpAddress=$(get_node_ip_address)
+
+    echo "node ip address is $nodeIpAddress, used for local name resolution"
+
+    cat << EOF > /tmp/loadtest-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: loadtest
+  namespace: $namespace
+spec:
+  containers:
+  - name: loader
+    image: pivotaleducation/loadtest:latest
+    resources:
+      limits:
+        cpu: "1"
+        memory: "64Mi"
+    env:
+    - name: URL
+      value: "${url}"
+    - name: DURATION
+      value: "${duration}"
+    - name: NUM_USERS
+      value: "${users}"
+    - name: REQUESTS_PER_SECOND
+      value: "${workRate}"
+  restartPolicy: Never
+  hostAliases:
+    - ip: "${nodeIpAddress}"
+      hostnames:
+      - "tracker.k8s.local"
+      - "development.tracker.k8s.local"
+      - "review.tracker.k8s.local"
+EOF
+
+    kill $pid
+}
+
 while getopts ":d:u:w:n:h:i:" o; do
     case "${o}" in
         d)
@@ -71,7 +135,9 @@ echo "  number of users: $users"
 echo "  work rate (requests per second: $workRate"
 echo "  url: $url"
 
-kubectl run loadtest --image pivotaleducation/loadtest:latest  --env="DURATION=$duration" --env="NUM_USERS=$users" --env="REQUESTS_PER_SECOND=$workRate" --env="URL=$url" --restart=Never
+generate_loadtester_resource_file $url $duration $users $workRate $namespace
+kubectl apply -f /tmp/loadtest-pod.yaml
+rm /tmp/loadtest-pod.yaml
 
 echo "waiting for pod/loadtest to start."
 

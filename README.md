@@ -216,8 +216,16 @@ Where:
 Note that from Kubernetes,
 you can only test from externally routable addresses.
 
-You can modify the script if necessary to add `/etc/host` entries via
-the `HostAlias` configuration.
+Notice that the script automatically adds `HostAlias` configuration to
+add the following host names to the first node address:
+
+- `tracker.k8s.local`
+- `development.tracker.k8s.local`
+- `review.tracker.k8s.local`
+
+This is added in the case you run microk8s, minikube or a local,
+single node K8s cluster that does not have an externally resolvable DNS
+hostname.
 
 ### Monitoring the test
 
