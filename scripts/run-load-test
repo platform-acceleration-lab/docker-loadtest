@@ -1,0 +1,193 @@
+#!/bin/bash
+
+# function usage() { echo "Usage: $0 [-d <duration in seconds>] [-u <number of concurrent users>] [-w <work rate - requests/second>]  [-l <local | dns - sets whether or not to set a host alias for a local host name>][-n <kubernetes namespace from where to run the load injector] [<target url> ]" 1>&2; exit 1; }
+
+function usage() {
+    echo "Usage: run-load-test [options] URL
+
+Options:
+    -d: Duration of the load test in seconds, mandatory
+    -u: Number of concurrent users, mandatory
+    -w: Fixed work rate as requests/second, mandatory
+    -l: Option for name resolution, optional, values are as follows:
+        'local': set load injector host alias of URL hostname to K8s
+                 use for development such as minikube, where you have no dns
+        'dns': use K8s or public dns for a URL hostname resolution (default)
+    -n: Kubernetes namespace from where to run the load injector, mandatory
+    URL: url targeted by the load injector
+
+Examples:
+    # Test a publicly accessible url
+    run-load-test -d 20 -u 10 -w 10 -n development http://yourip.com
+
+    # Test a K8s service named 'tracker' running on same cluster as injector
+    run-load-test -d 20 -u 10 -w 10 -n development http://tracker
+
+    # Test K8s ingress route 'tracker.k8s.local' without dns resolution, running on same cluster as injector
+    run-load-test -d 20 -u 10 -w 10 -n development -l local http://tracker.k8s.local"
+
+    exit 1;
+}
+
+function loadTestExists() {
+    local _exists=`kubectl get pod -n $namespace|grep loadtest|cut -f 1 -d " "`
+    if [ -z $_exists ] ; then
+        printf "false"
+    else
+        printf "true"
+    fi
+}
+
+function isRunning() {
+    local _running=`kubectl get pod -n $namespace|grep loadtest|grep "Running"|cut -f 1 -d " "`
+    if [ -z $_running ] ; then
+        printf "false"
+    else
+        printf "true"
+    fi
+}
+
+function strip_quotes() {
+    sed -e 's/^"//' -e 's/"$//' <<< $1
+}
+
+function get_node_name() {
+    strip_quotes $(curl -s http://127.0.0.1:9090/api/v1/nodes |jq '.items[0].metadata.name')
+}
+
+function get_node_ip_address() {
+    local _node=$(get_node_name)
+    strip_quotes $(curl -s http://127.0.0.1:9090/api/v1/nodes/$_node |jq '.status.addresses[] |select(.type=="InternalIP")'|jq '.address')
+}
+
+function getHostName() {
+    sed -e 's/[^/]*\/\/\([^@]*@\)\?\([^:/]*\).*/\2/' <<<$1
+}
+
+function generate_loadtester_resource_file() {
+    local _url=$1
+    local _duration=$2
+    local _users=$3
+    local _workRate=$4
+    local _namespace=$5
+    local _hostAlias=$6
+
+    cat << EOF > /tmp/loadtest-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: loadtest
+  namespace: $_namespace
+spec:
+  containers:
+  - name: loader
+    image: pivotaleducation/loadtest:latest
+    resources:
+      limits:
+        cpu: "1"
+        memory: "64Mi"
+    env:
+    - name: URL
+      value: "${_url}"
+    - name: DURATION
+      value: "${duration}"
+    - name: NUM_USERS
+      value: "${_users}"
+    - name: REQUESTS_PER_SECOND
+      value: "${_workRate}"
+  restartPolicy: Never
+EOF
+
+    if [ "$_hostAlias" = "local" ]; then
+        echo "Connecting to kubernetes to get node ip address"
+        kubectl proxy --port 9090 &
+            local _pid=$!
+            sleep 2
+            local _nodeIpAddress=$(get_node_ip_address)
+        kill $_pid
+
+        echo "node ip address is $_nodeIpAddress, used for local name resolution"
+
+        _hostName=$(getHostName $_url)
+
+        cat << EOF >> /tmp/loadtest-pod.yaml
+  hostAliases:
+    - ip: "${_nodeIpAddress}"
+      hostnames:
+      - "${_hostName}"
+EOF
+    fi
+}
+
+while getopts ":d:u:w:n:l:h:i:" o; do
+    case "${o}" in
+        d)
+            duration=${OPTARG}
+            ;;
+        u)
+            users=${OPTARG}
+            ;;
+        w)
+            workRate=${OPTARG}
+            ;;
+        n)
+            namespace=${OPTARG}
+            ;;
+        l):
+            hostAlias=${OPTARG}
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+if [ ! -z "$1" ] ; then
+    url=$1
+fi
+
+echo
+URL_EXPR='http[s]{0,1}://[a-zA-Z0-9\.]*'
+if [[ ! $url =~ $URL_EXPR ]] ; then
+    echo "URL is missing or not formatted correctly."
+    echo "You need http or https protocol specifier and valid host name."
+    echo "  Example: https://yahoo.com"
+    exit 1
+fi
+
+if [ -z "$duration" ] || [ -z "$users" ] || [ -z "$workRate" ] || [ -z "$namespace" ] || [ -z "$url" ]; then
+    usage
+    exit 1
+fi
+
+exist=$(loadTestExists)
+
+if [ $exist = true ]; then
+    echo "aborting existing load test, or cleaning up previous load test..."
+    kubectl delete pod/loadtest
+fi
+
+echo "[$(date --utc)]run load test in $namespace namespace with parameters:"
+echo "  duration: $duration"
+echo "  number of users: $users"
+echo "  work rate (requests per second: $workRate"
+echo "  url: $url"
+
+generate_loadtester_resource_file $url $duration $users $workRate $namespace $hostAlias
+kubectl apply -f /tmp/loadtest-pod.yaml
+rm /tmp/loadtest-pod.yaml
+
+echo "waiting for pod/loadtest to start."
+
+running=$(isRunning)
+while [ $running = false ]; do
+    printf "."
+    sleep 1
+    running=$(isRunning)
+done
+echo ""
+echo ""
+
+kubectl logs pod/loadtest -n $namespace -f
+kubectl delete pod/loadtest

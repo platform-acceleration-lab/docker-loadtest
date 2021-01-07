@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: loadtest
+  namespace: $namespace
+spec:
+  containers:
+  - name: loader
+    image: pivotaleducation/loadtest:latest
+    resources:
+      limits:
+        cpu: "1"
+        memory: "64Mi"
+    env:
+    - name: URL
+      value: "${url}"
+    - name: DURATION
+      value: "${duration}"
+    - name: NUM_USERS
+      value: "${users}"
+    - name: REQUESTS_PER_SECOND
+      value: "${workRate}"
+  restartPolicy: Never
+  hostAliases:
+    - ip: "${nodeIpAddress}"
+      hostnames:
+      - "${hostName}"
