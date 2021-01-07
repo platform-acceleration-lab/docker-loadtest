@@ -26,7 +26,7 @@ The advantages of using the image are that:
 You need `docker` installed/configured on the machine from which you
 will launch and monitor a load test.
 
-## Configuring it
+## Configure it
 
 The image is set to run 10 concurrent users at 10 requests per second
 targeting `http://localhost:8080` url for 5 minutes
@@ -54,7 +54,7 @@ configure through environment variables as follows:
     all the concurrent users.
     This provides input parameter for the `loadtest --rps` option.
 
-## Routing load test injector to target endpoint
+## Network considerations
 
 There are network scenarios to consider:
 
@@ -92,7 +92,7 @@ In this case you can use the
 [--addhost](https://docs.docker.com/engine/reference/commandline/run/)
 option to add manual host entries to your load injector container.
 
-## Running it
+## Start it
 
 -   To run interactively:
 
@@ -116,9 +116,9 @@ option to add manual host entries to your load injector container.
     Follow the same practices as the interactive option if you need to
     add host records.
 
-## Terminating it
+## Abort it
 
-1.  To terminate while running interactively.
+1.  To abort the load injector while running interactively.
     (before the 5 minute duration completes),
     just issue a sigquit via `Ctrl+C` command.
     Note that you must have started docker with the `-i` and `-t`
@@ -129,7 +129,7 @@ option to add manual host entries to your load injector container.
 
     `docker rm loadtest -f`
 
-## Monitoring
+## Monitor it
 
 The load test logs all direct to standard out.
 

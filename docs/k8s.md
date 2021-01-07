@@ -12,7 +12,7 @@ This article describes considerations for running the `loadtest`
 container under K8s,
 as well as the helper scripts.
 
-## Routing load test injector to target endpoint
+## Network considerations
 
 There are network scenarios to consider:
 
@@ -95,7 +95,7 @@ you can access the scripts from the
 - [`run-load-test`](https://raw.githubusercontent.com/platform-acceleration-lab/docker-loadtest/master/run-load-test).
 - [`abort-load-test`](https://raw.githubusercontent.com/platform-acceleration-lab/docker-loadtest/master/abort-load-test)
 
-## Run a test
+## Start it
 
 The `run-load-test` script is self documented,
 run the help option as follows:
@@ -130,7 +130,7 @@ minikube or microk8s in a dev or testing environment:
 
 `run-load-test -d 20 -u 10 -w 10 -n development -l local http://tracker.k8s.local`
 
-### Running manually
+### Start it manually
 
 If you cannot or do not want to run via the `run-load-test` script,
 you can run it via `kubectl` directly in either an imperative mode,
@@ -206,7 +206,7 @@ To run declaratively:
 
     `kubectl apply -f loadtest.yaml`
 
-## Monitor the test
+## Monitor it
 
 The supplied `run-load-test` script will not only start the load
 injector in the target K8s cluster,
@@ -219,7 +219,7 @@ You can also tail the logs via the following command:
 
 `kubectl logs loadtest -f`
 
-## Abort a test run
+## Abort it
 
 If you run a test to completion with the `run-load-test` script will
 also terminate the loadtest pod.

@@ -1,376 +1,195 @@
 # README
 
-This
-[pivotaleducation/loadtest](https://hub.docker.com/repository/docker/pivotaleducation/loadtest)
-docker image runs the
-[`loadtest` command](https://www.npmjs.com/package/loadtest)
-as a single containerized load injector.
-
-It is inspired by the now archived
-[bunchjesse/docker-loadtest Github project](https://github.com/bunchjesse/docker-loadtest)
-and associated docker image hosted at
-[Dockerhub](https://hub.docker.com/r/bunchjesse/loadtest).
+## Overview
 
-The advantages of using the image are that:
+Developers should take the time to explore what happens to their
+applications and/or the platforms where the applications run when placed
+under load:
 
-1.  You do not explicitly need to install `node` or `npm` dependencies
-    to run install or run `loadtest`.
+-   Does it *scale linearly* under load?
+-   How does it maintain availability of the overall application when
+    the comprised application components fail?
+-   What are the performance bottle necks?
+-   How much resources does it take when exercised like in production?
+-   Under what conditions does the application fail?
 
-1.  You can run `loadtest` from a workstation via docker,
-    or you may deploy it to run in a K8s cluster.
+The scope of this project is to provide a simple tool that satisfies the
+following:
 
-## How to use it
+-   Demonstrate *availability* and *horizontal scaling* characteristics
+    of PaaS or container orchestrated platforms in scaled-down
+    development environments.
 
-The image is set to run 10 concurrent users at 10 requests per second
-targeting `http://localhost:8080` url for 5 minutes
-(after which the load test gracefully terminates).
+-   Authoring of complex load scenario scripts is not necessary.
+    It is not intended for use for load testing of applications with a
+    *workload profile* where the test requires a specific set of
+    operations stitched together and correlated in a concurrent test
+    flow.
+    There are better tools for that,
+    such as [Gatling](https://gatling.io) or
+    [Apache Jmeter](jmeter.apache.org).
 
-### Configuring it
+The scope explicitly excludes performance or capacity assessments of an
+application.
 
-If you need to override the defaults
-(you will for at least the url),
-configure through environment variables as follows:
+## Running a load test scenario
 
--   `URL`:
-    full qualified URL (including protocol, host and path) for the
-    target of your load injector
+There are 4 minimum steps to run a load test.
+You may also need to abort a load test early if you determine it is
+not meeting your goals during its runtime.
 
--   `DURATION`:
-    duration of the test in seconds
-    (default of 300 seconds, or 5 minutes).
-    This provides input parameter for the `loadtest -d` option.
+1.  Identify goals of the test
+1.  Configure the application environment
+1.  Configure the load test parameters
+1.  Start the load test
+1.  Monitor the running test environment
+1.  Abort the test if monitoring activity demonstrates test is not
+    meeting the goals
+1.  Assess the results
+1.  Adjust the configuration as necessary, and repeat from step 3,
+    until assessment yields the desired goal.
 
--   `NUM_USERS`:
-    number of concurrent users issuing requests.
-    This provides input parameter for the `loadtest -c` option.
+### Identify Goals
 
--   `REQUESTS_PER_SECOND`:
-    throughput - target number of requests per second workrate for
-    all the concurrent users.
-    This provides input parameter for the `loadtest --rps` option.
+Identify what you want to demonstrate or verify in the test.
 
-### Routing load test injector to target endpoint
+Some examples:
 
-There are network scenarios to consider:
+-   Autoscaling behaviors under load -
+    verify platform autoscaling configures correct number of instances
+    according to its rules against its environment metrics.
 
-- Whether or not the load test injector is not on the same network as the target endpoint.
-- Whether or not the load injector can resolve DNS of the target endpoint.
+-   Availability behaviors during upgrades, or when inducing failures -
+    verify platform minimizes failures
 
-If you are running your injector from Docker,
-you should have egress access to external IP addresses.
-If the endpoint DNS name is configured through `/etc/hosts`
-or `dnsmasq`, you will need to manually add the appropriate host record(s)
-to the `docker run` command, via the `--addhost` option.
-If the endpoint is resolved through DNS server configured on your
-host machines,
-docker should resolve it automatically.
+### Configure application environment
 
-If you are running your load injector on K8s and your workloads
-under test are co-located in the same K8s cluster,
-you can configure your load injector target urls with the service
-dns addresses
-(either in shortform if colocated in the same namespace,
-or long form if across namespaces).
+### Configure load injector
 
-If you are running your load injector on K8s,
-and your workloads are external,
-verify with your K8s cluster operators that you have egress
-access and DNS resolution for the endpoint you wish to test.
+Identify the parameters to set for the load test:
 
-If you are pointing your load injector to an internal or private address
-that whose IP is accessible,
-but not resolvable via DNS,
-you can add a
-[host entry to your pod via a host alias](https://kubernetes.io/docs/concepts/services-networking/add-entries-to-pod-etc-hosts-with-host-aliases/).
+-   Duration needed to run the test -
+    should be as short as practical to verify desired behaviors
 
-### Running it
+-   Number of concurrent users -
+    should be multi-user to simulate a production concurrency or
+    threading model
 
--   To run via docker:
+-   Work-rate -
+    simulate a fixed throughput, blocking web requests per second via
+    http or https protocols.
+    The value should contribute to the goals of the test,
+    especially for scaling test relying on http throughput.
 
-    `docker run -t -i -e URL=http://yoururl.com pivotaleducation/loadtest`
+-   Target endpoint of the test -
+    this is the single URL endpoint you wish the load injector to
+    execute.
 
-    Note the `-e` option for environment variables.
-    If you need to override the other parameters,
-    merely add another `-e` option and the associated values for each.
+### Start it
 
-    If you are running with locally resolved addresses using `/etc/hosts`
-    or `dnsmasq`,
-    you will need to add host records to your docker run command as
-    follows:
+Start the load test according whether or not you are executing on
+[Docker](./docs/docker.md#start-it)
+or
+[K8s](./docs/k8s.md#start-it).
 
-    `docker run --add-host <host>:<ip> -t -i -e URL=http://yoururl.com pivotaleducation/loadtest`
+### Monitor it
 
--   To run via K8s *declaratively* as a K8s Job,
-    download the
-    [`loadtest-job.yaml`](https://raw.githubusercontent.com/platform-acceleration-lab/docker-loadtest/master/loadtest-job.yaml)
-    descriptor,
-    make the appropriate configuration changes to the name and
-    `env` configuration of the accompanying `loadtest-job.yaml`,
-    then run the following:
+Monitoring the load test relies on observing the following:
 
-    `kubectl apply -f ./loadtest-job.yaml`
+- Load injector metrics/telemetry
+- Application and Platform under test
 
-    Note the `env` object in the `loadtest-job.yaml` file to
-    list environment variables.
-    If you need to add the other parameters,
-    merely add another map entry for each.
+[Assess](#assess) the behaviors *during* the test,
+as well as *after* the test.
 
--   To run via K8s imperatively as a pod from the command line:
+For this load injector,
+monitoring is done via the logs.
 
-    `kubectl run loadtest --image=pivotaledu/loadtest --env="URL=http://yoururl.com"`
+See the following how to tail the logs based on your run method:
 
-    Note the `--env` option for environment variables.
-    If you need to override the other parameters,
-    merely add via additional `--env` options for each.
+- [Tail Docker load injector logs](./docs/docker.md#monitor-it)
+- [Tail K8s load injector logs](./docs/k8s.md#monitor-it)
 
--   To see the status of the K8s objects:
+If you are monitoring Kubernetes, consider the following tools:
 
-    `kubectl get all`
+- [Octant](https://octant.dev/)
+- `watch kubectl get all --namespace=<target namespace>`
+- `kubectl logs <workload type>/<workload resource name>`
 
--   Given running under K8s will be not be run in the foreground,
-    if you want to tail the logs:
+If you are monitoring applications running on
+[Tanzu Application Services](https://docs.pivotal.io/application-service/2-10/overview/release-notes/runtime-rn.html),
+consider the following tools:
 
-    If you run as a job:
+- [App Manager](https://docs.pivotal.io/application-service/2-10/console/dev-console.html)
+- `watch cf apps`
+- `watch cf app <app name>`
+- `watch cf events <app name>`
+- `cf logs <app name> -f`
 
-    `kubectl logs job/loadtest -f`
+### Abort it
 
-    If you run as a pod:
+Aborting the load injector is simply terminating a single deployment
+on your choice of deployment:
 
-    `kubectl logs pod/loadtest -f`
+- [Aborting a load injector running on Docker](./docs/docker.md#abort-it)
+- [Aborting a load injector running on K8s](./docs/k8s.md#abort-it)
 
-### Terminating it
+### Assess
 
-1.  To terminate while running from docker
-    (before the 5 minute duration completes),
-    just issue a sigquit via `Ctrl+C` command.
-    Note that you must have started docker with the `-i` and `-t`
-    options and not in the background (`-d` option).
+After either aborting or completion of a load test,
+assess the telemetry collected:
 
-1.  To terminate while running from K8s declaratively
-    (before the 5 minute duration completes):
+- [Load injector telemetry assessment](./docs/monitoring.md)
+- Application and platform behaviors
 
-    `kubectl delete -f ./loadtest-job.yaml`
+Can you verify the behaviors according to the goals of your test?
 
-1.  To terminate while running from K8s imperatively
-    (before the 5 minute duration completes):
+If not, [abort the test](#abort-it) if still running.
+Assess what changes you need to make to the
+[test goals](#identify-goals),
+[app configuration](#configure-application-environment) or
+[load injector configuration](#configure-load-injector), and
+[run the test again](#start-it) as necessary.
 
-    `kubectl delete pod/<podname>`
+## Background
 
-## Running with the wrapper scripts in K8s
+### Selection of *loadtest* tool
 
-Operating and monitoring the `pivotaleducation/loadtest` tool from K8s
-requires a bit more effort than from Docker,
-given more moving parts,
-and running in a managed background process.
+Authoring load test scripts is a tedious task.
 
-The following wrapper scripts are provided for you if you elect to run
-the load injector as a pod in a Kubernetes cluster:
+Tools such as *Apache Jmeter* or *Gatling* require authoring a test
+script.
 
-- `run-load-test`
-- `abort-load-test`
+Tools such as
+[Apache HTTP server benchmarking (ab)](https://httpd.apache.org/docs/2.4/programs/ab.html)
+tool, or
+[Siege](https://www.joedog.org/siege-manual/)
+are much simpler and popular tools for unstructured stress testing of
+simple web apps.
+But they are terrible tools for demonstrating scaling, availability or
+stability characteristics of applications for a simple reason:
 
-The rest of this section documents how to use them.
+*They do not provide a simple way to regulate the precise throughput or*
+*work-rate of an application.*
 
-### Prerequisites
+The [npm loadtest](https://www.npmjs.com/package/loadtest#usage) tool
+is selected because it is based on the simplicity of the *ab* tool,
+but while giving the capability to specify a precise work-rate that is
+necessary to demonstrate scaling and availability characteristics of
+blocking web applications.
 
-The load injector will run in a K8s cluster,
-all you need is `kubectl` and access to the K8s cluster from which the
-load injector will run.
-
-### Setup
-
-The only requirement to run and terminiate the load injector are two
-bash scripts.
-
-If you are running on an instructor provided remote desktop,
-check the accompanying remote desktop guide for the script location.
-
-If you are running on your own machine,
-you can access the scripts from the
-[load test Github repo](https://github.com/platform-acceleration-lab/docker-loadtest):
-
-- [`run-load-test`](https://raw.githubusercontent.com/platform-acceleration-lab/docker-loadtest/master/run-load-test).
-- [`abort-load-test`](https://raw.githubusercontent.com/platform-acceleration-lab/docker-loadtest/master/abort-load-test)
-
-### Running it
-
-There is no explicit setup for the load test tool.
-You merely need to run the following script supplied
-
-```bash
-run-load-test [-d <duration in seconds>] [-u <number of concurrent users>] [-w <work rate - requests/second] [-n <kubernetes namespace from where to run the load injector] [-h <host name for /etc/hosts> ] [-i <ip address for /etc/hosts> ] [<target url> ]
-```
-
-Where:
-
--   `-d` option specifies the duration of the test specified *in seconds*.
--   `-u` option specifies the number of simulated concurrent users
-    issuing requests against your application.
--   `-w` option specifies the number of requests-per-second issued to the
-    specified `url` *across all concurrent users*.
--   `-n` option specifies the target namespace with the load injector will run.
--   `target url` is the fully qualified http url (including protocol specifier,
-    host/port and path)
-    against which the load injector will issue requests.
-
-Note that from Kubernetes,
-you can only test from externally routable addresses.
-
-Notice that the script automatically adds `HostAlias` configuration to
-add the following host names to the first node address:
-
-- `tracker.k8s.local`
-- `development.tracker.k8s.local`
-- `review.tracker.k8s.local`
-
-This is added in the case you run microk8s, minikube or a local,
-single node K8s cluster that does not have an externally resolvable DNS
-hostname.
-
-### Monitoring the test
-
-The supplied `run-load-test` script will not only start the load
-injector in the target K8s cluster,
-but will also tail the logs so you may monitor status of your test.
-
-Once the test is complete (or you which to stop monitoring the test),
-merely issue a SIGQUIT to your terminal (via Ctrl+C).
-
-An example test run configured for 20 seconds and the
-`http://yourip.com` URL might look like this:
-
-```no-highlight
-╰─$ run-load-test -d 20 -u 10 -w 10 -n development http://yourip.com
-run load test in development namespace with parameters:
-  duration: 20
-  number of users: 10
-  work rate (requests per second: 10
-  url: http://yourip.com
-Connecting to kubernetes to get node ip address
-Starting to serve on 127.0.0.1:9090
-node ip address is 10.0.1.150, used for local name resolution
-pod/loadtest created
-waiting for pod/loadtest to start.
-..
-
-[Wed Jan 06 2021 08:24:12 GMT+0000 (Coordinated Universal Time)] INFO Requests: 0, requests per second: 0, mean latency: 0 ms
-[Wed Jan 06 2021 08:24:17 GMT+0000 (Coordinated Universal Time)] INFO Requests: 50, requests per second: 10, mean latency: 24.6 ms
-[Wed Jan 06 2021 08:24:22 GMT+0000 (Coordinated Universal Time)] INFO Requests: 100, requests per second: 10, mean latency: 25.5 ms
-[Wed Jan 06 2021 08:24:27 GMT+0000 (Coordinated Universal Time)] INFO Requests: 150, requests per second: 10, mean latency: 24.8 ms
-[Wed Jan 06 2021 08:24:32 GMT+0000 (Coordinated Universal Time)] INFO Requests: 200, requests per second: 10, mean latency: 24.2 ms
-[Wed Jan 06 2021 08:24:32 GMT+0000 (Coordinated Universal Time)] INFO
-[Wed Jan 06 2021 08:24:32 GMT+0000 (Coordinated Universal Time)] INFO Target URL:          http://yourip.com
-[Wed Jan 06 2021 08:24:32 GMT+0000 (Coordinated Universal Time)] INFO Max time (s):        20
-[Wed Jan 06 2021 08:24:32 GMT+0000 (Coordinated Universal Time)] INFO Concurrency level:   10
-[Wed Jan 06 2021 08:24:32 GMT+0000 (Coordinated Universal Time)] INFO Agent:               none
-[Wed Jan 06 2021 08:24:32 GMT+0000 (Coordinated Universal Time)] INFO Requests per second: 10
-[Wed Jan 06 2021 08:24:32 GMT+0000 (Coordinated Universal Time)] INFO
-[Wed Jan 06 2021 08:24:32 GMT+0000 (Coordinated Universal Time)] INFO Completed requests:  200
-[Wed Jan 06 2021 08:24:32 GMT+0000 (Coordinated Universal Time)] INFO Total errors:        0
-[Wed Jan 06 2021 08:24:32 GMT+0000 (Coordinated Universal Time)] INFO Total time:          20.00173621 s
-[Wed Jan 06 2021 08:24:32 GMT+0000 (Coordinated Universal Time)] INFO Requests per second: 10
-[Wed Jan 06 2021 08:24:32 GMT+0000 (Coordinated Universal Time)] INFO Mean latency:        24.8 ms
-[Wed Jan 06 2021 08:24:32 GMT+0000 (Coordinated Universal Time)] INFO
-[Wed Jan 06 2021 08:24:32 GMT+0000 (Coordinated Universal Time)] INFO Percentage of the requests served within a certain time
-[Wed Jan 06 2021 08:24:32 GMT+0000 (Coordinated Universal Time)] INFO   50%      22 ms
-[Wed Jan 06 2021 08:24:32 GMT+0000 (Coordinated Universal Time)] INFO   90%      30 ms
-[Wed Jan 06 2021 08:24:32 GMT+0000 (Coordinated Universal Time)] INFO   95%      47 ms
-[Wed Jan 06 2021 08:24:32 GMT+0000 (Coordinated Universal Time)] INFO   99%      76 ms
-[Wed Jan 06 2021 08:24:32 GMT+0000 (Coordinated Universal Time)] INFO  100%      97 ms (longest request)
-```
-
-Notice the startup phase - this might take up to a minute the first time
-you execute it,
-as Kubernetes will need to download the accompanying loadtest image
-the first time.
-
-Notice the monitoring status during the test,
-logging requests errors and latencies on roughly 5 second intervals.
-
-Notice when the test finishes,
-it will show you summary stats.
-
-Monitoring will be a useful tool for you when you run the accompanying
-labs.
-
-### Errors
-
-Monitoring for errors will be critical for monitoring and assessing your
-application during the load test
-
-You will get valuable information from the load test logs to show *when*
-errors occur *during* the test run,
-as well as the impact of errors across the entire load test.
-
-Run the following load test scenario with an invalid URL to induce
-failures:
-
-1.  `run-load-test -d 20 -u 10 -w 10 -n development http://dude`
-
-1.  Review the output *during* the test,
-    you will see the following pattern:
-
-    ```nohighlight
-    [Wed Jan 06 2021 08:25:55 GMT+0000 (Coordinated Universal Time)] INFO Requests: 50, requests per second: 10, mean latency: 3.2 ms
-    [Wed Jan 06 2021 08:25:55 GMT+0000 (Coordinated Universal Time)] INFO Errors: 50, accumulated errors: 50, 100% of total requests
-    [Wed Jan 06 2021 08:26:00 GMT+0000 (Coordinated Universal Time)] INFO Requests: 100, requests per second: 10, mean latency: 1.5 ms
-    [Wed Jan 06 2021 08:26:00 GMT+0000 (Coordinated Universal Time)] INFO Errors: 50, accumulated errors: 100, 100% of total requests
-    [Wed Jan 06 2021 08:26:05 GMT+0000 (Coordinated Universal Time)] INFO Requests: 150, requests per second: 10, mean latency: 2.5 ms
-    [Wed Jan 06 2021 08:26:05 GMT+0000 (Coordinated Universal Time)] INFO Errors: 50, accumulated errors: 150, 100% of total requests
-    ```
-
-1.  Notice that once errors occur in the load test,
-    there are *two* lines logged for each monitor sample interval.
-    The second line gives you both the number of errors that occurred
-    within the interval,
-    as well as the accumulated errors.
-    and the percentage of errors across the entire load test:
-
-    ```nohighlight
-    [Wed Jan 06 2021 08:25:55 GMT+0000 (Coordinated Universal Time)] INFO Errors: 50, accumulated errors: 50, 100% of total requests
-    ```
-
-### Aborting a test run
-
-You can exit the script during an existing test run by issuing a
-SIGQUIT (via Ctrl+C),
-but by doing so you are not terminating the load injector.
-It will continue to run on the Kubernetes cluster until it finishes,
-or unless you explicitly terminate it.
-
-You can use the `abort-load-test` script to abort the test:
-
-```bash
-abort-load-test [-n <kubernetes namespace from where to run the load injector]
-```
-
-This will terminate and remove the Kubernetes pod where the load
-injector runs.
-
-## Limitations and Caveats
-
-This project is intended for small scale,
-educational use.
-
-It is not designed for large scale production use.
-
+Note that it is not designed for large scale production use.
 This project runs `loadtest` as a single injector process,
-and it does not support building a user workflow.
+and it does not support building correlated user workflow test scenarios.
 
 See the associated
 ["Usage Don'ts" in the loadtest reference](https://www.npmjs.com/package/loadtest#usage-donts).
 
-Consider other tools like
-[Gatling](https://gatling.io) or
-[Apache Jmeter](https://jmeter.apache.org) for use in real projects.
-
-## Building it
+### Building it
 
 Pehaps you need to tune or tweak the tool if as-is it does not fit your
 needs.
 
-This is a simple Docker build,
-with no other dependencies thay what is in the `Dockerfile`.
 Feel free to fork or clone the project,
 make the associated change to the `Dockerfile` and rebuild it:
 

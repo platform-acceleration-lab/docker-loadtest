@@ -2,25 +2,7 @@
 
 ## Overview
 
-Developers should take the time to explore what happens to their
-applications when placed under load.
-
-The scope of this project is to provide a simple tool to exercise an
-endpoint of your application.
-This is useful for demonstration, education, or light verification
-purposes.
-
-It is not intended for use for load testing of applications with a
-*workload profile* where the test requires a specific set of operations
-stitched together in a test flow.
-There are better tools for that,
-such as [Gatling](https://gatling.io) or
-[Apache Jmeter](jmeter.apache.org).
-
-See the [Limitations and Caveats](#limitations-and-caveats) section for
-more details when the tool presented here is not a good fit.
-
-### Monitoring the test
+## Assess log
 
 An example test run configured for 20 seconds and the
 `http://yourip.com` URL might look like this:
@@ -114,56 +96,3 @@ failures:
     ```nohighlight
     [Wed Jan 06 2021 08:25:55 GMT+0000 (Coordinated Universal Time)] INFO Errors: 50, accumulated errors: 50, 100% of total requests
     ```
-
-### Aborting a test run
-
-You can exit the script during an existing test run by issuing a
-SIGQUIT (via Ctrl+C),
-but by doing so you are not terminating the load injector.
-It will continue to run on the Kubernetes cluster until it finishes,
-or unless you explicitly terminate it.
-
-You can use the `abort-load-test` script to abort the test:
-
-```bash
-abort-load-test [-n <kubernetes namespace from where to run the load injector]
-```
-
-This will terminate and remove the Kubernetes pod where the load
-injector runs.
-
-## Limitations and Caveats
-
-This project is intended for small scale,
-educational use.
-
-It is not designed for large scale production use.
-
-This project runs `loadtest` as a single injector process,
-and it does not support building a user workflow.
-
-See the associated
-["Usage Don'ts" in the loadtest reference](https://www.npmjs.com/package/loadtest#usage-donts).
-
-Consider other tools like
-[Gatling](https://gatling.io) or
-[Apache Jmeter](https://jmeter.apache.org) for use in real projects.
-
-## Building it
-
-Pehaps you need to tune or tweak the tool if as-is it does not fit your
-needs.
-
-This is a simple Docker build,
-with no other dependencies thay what is in the `Dockerfile`.
-Feel free to fork or clone the project,
-make the associated change to the `Dockerfile` and rebuild it:
-
-`docker build -t <your customer container repository:tag> .`
-
-## References
-
-View this image on
-[Docker Hub](https://hub.docker.com/r/pivotaleducation/loadtest/).
-
-View the project at [Github](https://github.com/platform-acceleration-lab/docker-loadtest).
