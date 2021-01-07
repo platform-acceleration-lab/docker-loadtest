@@ -155,10 +155,15 @@ Assess what changes you need to make to the
 
 ### Selection of *loadtest* tool
 
-Authoring load test scripts is a tedious task.
+Tools such as
+[*Apache Jmeter*](https://jmeter.apache.org) or
+[*Gatling*](https://gatling.io) are great choices for implementing
+production-like simulations for load tests.
+They allow authoring complex correlated workflows.
 
-Tools such as *Apache Jmeter* or *Gatling* require authoring a test
-script.
+The scope of this project is not to test application workflows,
+but rather to demonstrate platform behaviors,
+without the overhead of authoring workflows.
 
 Tools such as
 [Apache HTTP server benchmarking (ab)](https://httpd.apache.org/docs/2.4/programs/ab.html)
@@ -166,7 +171,8 @@ tool, or
 [Siege](https://www.joedog.org/siege-manual/)
 are much simpler and popular tools for unstructured stress testing of
 simple web apps.
-But they are not suitable tools for demonstrating scaling, availability
+They have limited-to-no capability to test workflows,
+and are not suitable tools for demonstrating scaling, availability
 or stability characteristics of applications for a simple reason:
 
 *They do not provide a simple way to regulate the precise throughput or*
