@@ -27,7 +27,7 @@ following:
     flow.
     There are better tools for that,
     such as [Gatling](https://gatling.io) or
-    [Apache Jmeter](jmeter.apache.org).
+    [Apache Jmeter](https://jmeter.apache.org).
 
 The scope explicitly excludes performance or capacity assessments of an
 application.
@@ -139,7 +139,7 @@ on your choice of deployment:
 After either aborting or completion of a load test,
 assess the telemetry collected:
 
-- [Load injector telemetry assessment](./docs/monitoring.md)
+- [Load injector telemetry assessment](./docs/monitoring.md#assess-log)
 - Application and platform behaviors
 
 Can you verify the behaviors according to the goals of your test?
@@ -166,19 +166,22 @@ tool, or
 [Siege](https://www.joedog.org/siege-manual/)
 are much simpler and popular tools for unstructured stress testing of
 simple web apps.
-But they are terrible tools for demonstrating scaling, availability or
-stability characteristics of applications for a simple reason:
+But they are not suitable tools for demonstrating scaling, availability
+or stability characteristics of applications for a simple reason:
 
 *They do not provide a simple way to regulate the precise throughput or*
-*work-rate of an application.*
+*work-rate the load injector applies to an application.*
 
 The [npm loadtest](https://www.npmjs.com/package/loadtest#usage) tool
-is selected because it is based on the simplicity of the *ab* tool,
+is selected because it is based on the simplicity of the
+*ab* (https://httpd.apache.org/docs/2.4/programs/ab.html)
+tool,
 but while giving the capability to specify a precise work-rate that is
 necessary to demonstrate scaling and availability characteristics of
 blocking web applications.
 
-Note that it is not designed for large scale production use.
+Note that [loadtest](https://www.npmjs.com/package/loadtest)
+is not designed for large scale production use.
 This project runs `loadtest` as a single injector process,
 and it does not support building correlated user workflow test scenarios.
 
