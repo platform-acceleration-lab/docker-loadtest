@@ -175,7 +175,7 @@ To run declaratively:
 1.  If the target URL is an ingress whose route is local to the K8s
     cluster where your load injector runs (for example, minikube or
     microk8s),
-    resolve the K8s node ip adress:
+    resolve the K8s node ip adress as your `${nodeIpAddress}`:
 
     -   Get the node list:
 
@@ -202,7 +202,7 @@ To run declaratively:
         InternalIP:  10.0.1.150
         ```
 
-1.  Apply your configuration:
+1.  Save and apply your load test configuration:
 
     `kubectl apply -f loadtest.yaml`
 
