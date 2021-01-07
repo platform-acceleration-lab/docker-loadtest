@@ -2,35 +2,44 @@
 
 ## Overview
 
-Developers should take the time to explore what happens to their
-applications and/or the platforms where the applications run when placed
-under load:
+The scope of this project is to provide a simple load injector that
+facilitates demonstration *availability* and *horizontal scaling*
+characteristics of PaaS or container orchestrated platforms in
+scaled-down development environments where simplicity is paramount.
 
--   Does it *scale linearly* under load?
--   How does it maintain availability of the overall application when
-    the comprised application components fail?
--   What are the performance bottle necks?
--   How much resources does it take when exercised like in production?
--   Under what conditions does the application fail?
+Authoring of complex load scenario scripts is not desired.
+It is not intended for use for load testing of applications with a
+*workload profile* where the test requires a specific set of operations
+stitched together and correlated in a concurrent test flow.
 
-The scope of this project is to provide a simple tool that satisfies the
-following:
-
--   Demonstrate *availability* and *horizontal scaling* characteristics
-    of PaaS or container orchestrated platforms in scaled-down
-    development environments.
-
--   Authoring of complex load scenario scripts is not necessary.
-    It is not intended for use for load testing of applications with a
-    *workload profile* where the test requires a specific set of
-    operations stitched together and correlated in a concurrent test
-    flow.
-    There are better tools for that,
-    such as [Gatling](https://gatling.io) or
-    [Apache Jmeter](https://jmeter.apache.org).
+There are better tools for that,
+such as [Gatling](https://gatling.io) or
+[Apache Jmeter](https://jmeter.apache.org).
 
 The scope explicitly excludes performance or capacity assessments of an
 application.
+
+This
+[pivotaleducation/loadtest docker image](https://hub.docker.com/repository/docker/pivotaleducation/loadtest)
+runs the
+[loadtest](https://www.npmjs.com/package/loadtest)
+command as a single containerized load injector.
+
+It is inspired by the now archived
+[bunchjesse/docker-loadtest Github project](https://github.com/bunchjesse/docker-loadtest)
+and associated
+[docker image hosted at Dockerhub](https://hub.docker.com/r/bunchjesse/loadtest/).
+
+The advantages of using this project are that:
+
+-   You do not explicitly need to install node or npm dependencies to
+    run install or run `loadtest`.
+
+-   You can run `loadtest` from a workstation via docker,
+    or you may deploy it to run in a K8s cluster.
+
+-   Enhanced instructions on assessing `loadtest` log output and
+    summary reporting.
 
 ## Running a load test scenario
 
